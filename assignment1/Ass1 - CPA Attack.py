@@ -112,9 +112,9 @@ def get_power_prediction_matrix(no_inputs):
     # Initialize power prediction matrix
     power_pred = np.zeros(shape=(no_inputs, 16))
 
-    for in_val in inputs:
+    for i in range(no_inputs):
         for key in range(0, 16):
-            power_pred[in_val] = HammingWeight[SBox(in_val[0], key)]
+            power_pred[i][key] = HammingWeight[SBox(inputs[i][0], key)]
 
     np.shape(power_pred)  
     
@@ -132,6 +132,12 @@ def get_power_prediction_matrix(no_inputs):
 power_pred = get_power_prediction_matrix(no_inputs)
 
 
+# In[11]:
+
+
+power_pred
+
+
 # #### For all possible k candidates, compute the column-wise correlation between the traces matrix and the power-prediction matrix. Every guess will be compared to all traces.
 # #### Pearson Correlation Formula:
 # $ r = \frac{{}\sum_{i=1}^{n} (h_i - \overline{h})(t_i - \overline{t})}
@@ -147,7 +153,7 @@ power_pred = get_power_prediction_matrix(no_inputs)
 # We will use numpy.corrcoef to obtain the Pearson correlation coefficients.
 # Ref: https://docs.scipy.org/doc/numpy/reference/generated/numpy.corrcoef.html
 
-# In[11]:
+# In[12]:
 
 
 def correlate_traces_with_hypotheses(traces, power_pred):
@@ -164,7 +170,7 @@ def correlate_traces_with_hypotheses(traces, power_pred):
     return correlation   
 
 
-# In[12]:
+# In[13]:
 
 
 # traces 14900 X 6990
@@ -172,57 +178,57 @@ np.shape(traces)
 # power_pred 149000 X 16
 np.shape(power_pred)
 
-# candidates 16 X 6990
-candidates = correlate_traces_with_hypotheses(traces, power_pred)
+# absolute candidates 16 X 6990
+abs_candidates = abs(correlate_traces_with_hypotheses(traces, power_pred))
 
 
 # In[14]:
 
 
-candidates
-
-
-# In[15]:
-
-
-def get_top_candidate(candidates):       
-    # The top candidate will be chosen based on absolute correlation.
-    # The highest correlation reveals the actual KEY.
-    
-    candidates_abs = np.zeros(16)
-    
-    # Only store the maximum cpa across all points in the trace 16 X 1
-    for i in range(16):
-        candidates_abs[i] = max(abs(candidates[i]))
-        
-    # Rank the key candidates from best to worst, based on the absolute value of the correlation function.
-    print('Top candidates: ', candidates_abs.argsort()[::-1][:])
-    
-    # The highest correlation value reveals the key
-    top_candidate_row = np.argmax(candidates_abs)
-    
-    return top_candidate_row
-
-
-# In[16]:
-
-
-top_candidate = get_top_candidate(candidates)
+abs_candidates
 
 
 # In[17]:
 
 
+def get_top_candidate(candidates):       
+    # The top candidate will be chosen based on absolute correlation.
+    # The highest correlation reveals the actual KEY.
+    candidates_max = np.zeros(16)
+    
+    # Only store the maximum cpa across all points in the trace 16 X 1
+    for i in range(16):
+        candidates_max[i] = max(candidates[i])
+        
+    # Rank the key candidates from best to worst, based on the absolute value of the correlation function.
+    print('Top candidates: ', candidates_max.argsort()[::-1][:])
+    
+    # The highest correlation value reveals the key
+    top_candidate_row = np.argmax(candidates_max)
+    
+    return top_candidate_row
+
+
+# In[18]:
+
+
+top_candidate = get_top_candidate(abs_candidates)
+
+
+# In[21]:
+
+
 # For every time sample, plot the absolute correlation value for every k candidate
 plt.figure()
 
-for i in range(np.shape(candidates)[0]): # 16 candidate keys
+for i in range(np.shape(abs_candidates)[0]): # 16 candidate keys
         if (i == top_candidate):
-            plt.plot(candidates[i], 'b')
+            plt.plot(abs_candidates[i], color= '#51A5EB', zorder=2)
         else:
-            plt.plot(candidates[i], 'k')
+            plt.plot(abs_candidates[i], color = '#DCDCDC', zorder=1)
         
 plt.title("Absolute correlation values for the key candidates")
-plt.xlabel("Correlation")
-plt.ylabel("Time")
+plt.xlabel("Time")
+plt.ylabel("Correlation")
 plt.show()
+
